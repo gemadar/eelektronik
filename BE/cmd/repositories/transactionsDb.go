@@ -53,12 +53,41 @@ func GetTransactions() ([]models.Transactions, error) {
 	return data, nil
 }
 
-func CreateUpdateTransactions(trx models.Transactions) string {
+func CreateTransactions(trx models.Transactions) string {
+	fmt.Println(trx)
 	result1 := db.Create(&trx)
 
 	if result1.Error != nil {
 		return "Failed!"
 	}
+	return "Success!"
+}
+
+func UpdateTransactions(trx models.Transactions) string {
+	fmt.Println(trx.Total)
+	result := db.Transaction(func(tx *gorm.DB) error {
+		if err := db.Model(&models.Transactions{}).Where("trx_id = ?", trx.TrxId).Updates(models.Transactions{PaymentType: trx.PaymentType, Total: trx.Total, CstId: trx.CstId, CstName: trx.CstName}).Error; err != nil {
+			return err
+		}
+		for i := range trx.TransactionsDetails {
+			if trx.TransactionsDetails[i].Id != 0 {
+				if err := db.Model(&models.TransactionsDetails{}).Where("id = ?", trx.TransactionsDetails[i].Id).Updates(models.TransactionsDetails{Quantity: trx.TransactionsDetails[i].Quantity, Price: trx.TransactionsDetails[i].Price}).Error; err != nil {
+					return err
+				}
+			} else {
+				if err := db.Create(&trx.TransactionsDetails[i]).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if result != nil {
+		return "Failed!"
+	}
+
 	return "Success!"
 }
 

@@ -23,11 +23,20 @@ func GenerateTrxId(c echo.Context) error {
 	return c.JSON(http.StatusFound, data)
 }
 
-func CreateUpdateTransactions(c echo.Context) error {
+func CreateTransactions(c echo.Context) error {
 	trx := models.Transactions{}
 
 	c.Bind(&trx)
-	updatedTransaction := repositories.CreateUpdateTransactions(trx)
+	createdTransaction := repositories.CreateTransactions(trx)
+
+	return c.JSON(http.StatusOK, createdTransaction)
+}
+
+func UpdateTransactions(c echo.Context) error {
+	trx := models.Transactions{}
+
+	c.Bind(&trx)
+	updatedTransaction := repositories.UpdateTransactions(trx)
 
 	return c.JSON(http.StatusOK, updatedTransaction)
 }

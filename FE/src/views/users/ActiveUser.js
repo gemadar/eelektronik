@@ -57,16 +57,28 @@ export default function ActiveUser() {
   const footer = users == 0 ? `There is no user.` : `There are ${users.length} users.`;
 
   const insertState = (data) => {
-    setUsers([
-      ...users,
-      {
-        id: data.id,
-        name: data.name,
-        role: data.role,
-        created_at: Date.now(),
-        updated_at: Date.now()
-      }
-    ]);
+    if (users.length > 0) {
+      setUsers([
+        ...users,
+        {
+          id: users[users.length - 1].id + 1,
+          name: data.name,
+          role: data.role,
+          created_at: Date.now(),
+          updated_at: Date.now()
+        }
+      ]);
+    } else {
+      setUsers([
+        {
+          id: 1,
+          name: data.name,
+          role: data.role,
+          created_at: Date.now(),
+          updated_at: Date.now()
+        }
+      ]);
+    }
   };
 
   const initFilters = () => {

@@ -27,13 +27,17 @@ import 'primereact/resources/primereact.css'; // core css
 export default function Transaction() {
   const [transactions, setTransactions] = useState([]);
   const [transactionsDetails, setTransactionsDetails] = useState([]);
+  const [currentRow, setCurrentRow] = useState(null);
+  const [transactionsDetailsb, setTransactionsDetailsb] = useState([]);
   const [cust, setCust] = useState([]);
   const [goods, setGoods] = useState([]);
   const [trxId, setTrxId] = useState([]);
   const [expandedRows, setExpandedRows] = useState(null);
-  const [currentRow, setCurrentRow] = useState(null);
   const [updateVisible, setUpdateVisible] = useState(false);
   const [insertVisible, setInsertVisible] = useState(false);
+  const [payVisible, setPayVisible] = useState(false);
+  const [paymentType, setPaymentType] = useState('');
+  const [cstId, setCstId] = useState('');
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const [confirmUpdateVisible, setConfirmUpdateVisible] = useState(false);
   const sideMenu = useRef(null);
@@ -41,14 +45,9 @@ export default function Transaction() {
   const defaultValues = { value: '' };
   const insertForm = useForm();
   const detailsForm = useForm();
+  const detailsFormb = useForm();
   const updateForm = useForm({ defaultValues });
-  const updateErrors = updateForm.formState.errors;
   const { REACT_APP_IP } = process.env;
-
-  // TOAST
-  const getUpdateFormErrorMessage = (name) => {
-    return updateErrors[name] ? <small className="p-error">{updateErrors[name].message}</small> : <small className="p-error">&nbsp;</small>;
-  };
 
   const footer = transactions == 0 ? `There is no transaction.` : `There are ${transactions.length} transactions.`;
 
@@ -76,7 +75,7 @@ export default function Transaction() {
       label: 'Pay',
       icon: 'pi pi-times',
       command: () => {
-        //setConfirmDeleteVisible(true);
+        setPayVisible(true);
       }
     },
     {
@@ -84,12 +83,14 @@ export default function Transaction() {
       icon: 'pi pi-refresh',
       command: () => {
         setUpdateVisible(true);
+        setTransactionsDetailsb(currentRow.TransactionsDetails);
+        setPaymentType(currentRow ? currentRow.payment_type : '');
+        setCstId(currentRow ? currentRow.cst_id : '');
         updateForm.reset({
           id: currentRow.id,
-          name: currentRow.name,
-          address: currentRow.address,
-          phone: currentRow.phone,
-          pic: currentRow.pic
+          cst_id: cust.filter((cust) => cust.id === currentRow.cst_id)[0],
+          payment_type: currentRow.payment_type,
+          total: parseInt(currentRow.total)
         });
       }
     }
@@ -97,9 +98,9 @@ export default function Transaction() {
 
   //HIT API
   const onSubmitInsert = async (data) => {
-    data['TransactionsDetails'] = transactionsDetails;
     data['trx_id'] = trxId;
     data['total'] = totalColumn();
+    data['TransactionsDetails'] = transactionsDetails;
     data['cst_name'] = data.cst_id.name;
     data['cst_id'] = parseInt(data.cst_id.id);
     data['status'] = 'unpaid';
@@ -114,18 +115,15 @@ export default function Transaction() {
   };
 
   const onSubmitUpdate = async (data) => {
-    data['id'] = currentRow.id;
-    data['TransactionsDetails'] = currentRow.TransactionsDetails;
-    const url = `${REACT_APP_IP}/trx`;
-    const requestOptions = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    };
-    await fetch(url, requestOptions)
-      .then((response) => response.json)
-      .then(setUpdateVisible(false));
+    data['TransactionsDetails'] = transactionsDetailsb;
+    data['total'] = totalCurrentColumn();
+    data['cst_name'] = data.cst_id.name;
+    data['cst_id'] = parseInt(data.cst_id.id);
+    data['trx_id'] = currentRow.trx_id;
 
+    insertUpdateCont(data, `${REACT_APP_IP}/trx/update`).then(setUpdateVisible(false));
+
+    data['status'] = 'unpaid';
     updateState(data);
 
     toast.current.show({ severity: 'warn', summary: 'Update', detail: 'Data Updated', life: 3000 });
@@ -133,6 +131,8 @@ export default function Transaction() {
 
   useEffect(() => {
     getCont(`${REACT_APP_IP}/trx`).then((data) => setTransactions(data));
+    getCont(`${REACT_APP_IP}/cust`).then((data) => setCust(data));
+    getCont(`${REACT_APP_IP}/goods`).then((data) => setGoods(data));
   }, [REACT_APP_IP]);
 
   // STATE PURPOSE
@@ -145,50 +145,139 @@ export default function Transaction() {
         {
           item: data.item.name,
           quantity: data.quantity,
-          price: intPrice * intQty
+          price: intPrice * intQty,
+          created_at: Date.now()
         }
       ]);
     } else {
-      transactionsDetails.map((obj) => {
-        if (obj.item === data.item) {
-          const dat = transactionsDetails.map((obj) => {
-            if (obj.item === data.item) {
-              return { ...obj, item: data.item, quantity: data.quantity, price: intPrice * intQty };
-            }
-            return obj;
-          });
-          setTransactionsDetails(dat);
-        }
+      var a = transactionsDetails.filter((obj) => obj.item === data.item.name)[0]
+        ? transactionsDetails.filter((obj) => obj.item === data.item.name)[0]
+        : null;
 
-        if (obj.item !== data.item) {
-          setTransactionsDetails([
-            ...transactionsDetails,
-            {
-              item: data.item,
-              quantity: data.quantity,
-              price: intPrice * intQty
-            }
-          ]);
-        }
-      });
+      if (a !== null) {
+        const dat = transactionsDetails.map((a) => {
+          if (a.item === data.item.name) {
+            return { ...a, quantity: a.quantity + data.quantity, price: intPrice * intQty, created_at: Date.now() };
+          }
+          return a;
+        });
+        setTransactionsDetails(dat);
+      } else {
+        setTransactionsDetails([
+          ...transactionsDetails,
+          {
+            item: data.item.name,
+            quantity: data.quantity,
+            price: intPrice * intQty,
+            created_at: Date.now()
+          }
+        ]);
+      }
     }
 
     detailsForm.reset();
   };
 
-  const insertState = (data) => {
-    setTransactions([
-      ...transactions,
-      {
-        id: transactions[transactions.length - 1].id + 1,
-        cst_name: data.cst_name,
-        trx_id: trxId,
-        status: data.status,
-        created_at: Date.now(),
-        total: data.total,
-        TransactionsDetails: transactionsDetails
+  const updateTrxDetailsStateb = (data) => {
+    const intPrice = parseInt(data.price);
+    const intQty = parseInt(data.quantity);
+
+    if (transactionsDetailsb.length == 0) {
+      setTransactionsDetailsb([
+        {
+          item: data.item.name,
+          quantity: data.quantity,
+          price: intPrice * intQty,
+          trx_id: currentRow ? currentRow.trx_id : '',
+          created_at: Date.now()
+        }
+      ]);
+    } else {
+      var a = transactionsDetailsb.filter((obj) => obj.item === data.item.name)[0]
+        ? transactionsDetails.filter((obj) => obj.item === data.item.name)[0]
+        : null;
+
+      if (a !== null) {
+        const dat = transactionsDetailsb.map((a) => {
+          if (a.item === data.item.name) {
+            return {
+              ...a,
+              quantity: a.quantity + data.quantity,
+              price: a.price + intPrice * intQty,
+              trx_id: currentRow ? currentRow.trx_id : '',
+              created_at: Date.now()
+            };
+          }
+          return a;
+        });
+        setTransactionsDetailsb(dat);
+      } else {
+        setTransactionsDetailsb([
+          ...transactionsDetailsb,
+          {
+            item: data.item.name,
+            quantity: data.quantity,
+            price: intPrice * intQty,
+            trx_id: currentRow ? currentRow.trx_id : '',
+            created_at: Date.now()
+          }
+        ]);
       }
-    ]);
+    }
+    detailsFormb.reset();
+  };
+
+  const insertState = (data) => {
+    if (transactions.length > 0) {
+      setTransactions([
+        ...transactions,
+        {
+          id: transactions[transactions.length - 1].id + 1,
+          payment_type: data.payment_type,
+          cst_id: data.cst_id,
+          cst_name: data.cst_name,
+          trx_id: trxId,
+          status: data.status,
+          created_at: Date.now(),
+          total: data.total,
+          TransactionsDetails: transactionsDetails
+        }
+      ]);
+    } else {
+      setTransactions([
+        {
+          id: 1,
+          payment_type: data.payment_type,
+          cst_id: data.cst_id,
+          cst_name: data.cst_name,
+          trx_id: trxId,
+          status: data.status,
+          created_at: Date.now(),
+          total: data.total,
+          TransactionsDetails: transactionsDetails
+        }
+      ]);
+    }
+  };
+
+  const updateState = (data) => {
+    const newData = transactions.map((obj) => {
+      if (obj.id === data.id) {
+        return {
+          ...obj,
+          id: data.id,
+          cst_name: data.cst_name,
+          trx_id: data.trx_id,
+          status: data.status,
+          created_at: Date.now(),
+          total: data.total,
+          TransactionsDetails: data.TransactionsDetails
+        };
+      }
+      return obj;
+    });
+
+    setTransactions(newData);
   };
 
   const handleDeleteTrxDetails = (data) => {
@@ -262,6 +351,26 @@ export default function Transaction() {
     return total;
   };
 
+  const totalCurrentColumn = () => {
+    let total = 0;
+
+    for (let trx of transactionsDetailsb) {
+      total += parseInt(trx.price);
+    }
+
+    return total;
+  };
+
+  const totalOrderColumn = () => {
+    let total = 0;
+
+    for (let trx of currentRow ? currentRow.TransactionsDetails : []) {
+      total += parseInt(trx.price);
+    }
+
+    return total;
+  };
+
   const priceBodyTemplate = (rowData) => {
     return priceTemplate(rowData.price);
   };
@@ -275,6 +384,13 @@ export default function Transaction() {
   };
 
   const totals = priceTemplate(totalColumn());
+  const updateTotals = priceTemplate(totalCurrentColumn());
+  const orderTotals = priceTemplate(totalOrderColumn());
+  const date = new Date();
+  const formatter = new Intl.DateTimeFormat('en', { month: 'long' });
+  const currentDate = date.getDate() + ' ' + formatter.format(date.getMonth()) + ' ' + date.getFullYear();
+  const currentTime = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
+  var dateTime = currentDate + ' ' + currentTime;
 
   const totalColumnTemplate = (
     <ColumnGroup>
@@ -298,13 +414,49 @@ export default function Transaction() {
     </ColumnGroup>
   );
 
+  const totalUpdateColumnTemplate = (
+    <ColumnGroup>
+      <Row>
+        <Column footer="Totals:" colSpan={2} footerStyle={{ textAlign: 'right' }} />
+        <Column footer={updateTotals} footerStyle={{ textAlign: 'left' }} />
+        <Column
+          footer={
+            <Button
+              id="updatebtn"
+              disabled={
+                currentRow
+                  ? currentRow.payment_type == paymentType &&
+                    currentRow.cst_id == cstId &&
+                    currentRow.TransactionsDetails == transactionsDetailsb
+                  : true
+              }
+              form="updateTrx"
+              icon="pi pi-check"
+              type="submit"
+              size="small"
+              severity="success"
+              label="Submit"
+            />
+          }
+        />
+      </Row>
+    </ColumnGroup>
+  );
+  console.log(paymentType);
+  const totalPaymentColumnTemplate = (
+    <ColumnGroup>
+      <Row>
+        <Column footer="Totals:" colSpan={2} footerStyle={{ textAlign: 'right' }} />
+        <Column footer={orderTotals} footerStyle={{ textAlign: 'left' }} />
+      </Row>
+    </ColumnGroup>
+  );
+
   return (
     <MainCard
       title="Transactions"
       secondary={fab(() => {
         setInsertVisible(true);
-        getCont(`${REACT_APP_IP}/cust`).then((data) => setCust(data));
-        getCont(`${REACT_APP_IP}/goods`).then((data) => setGoods(data));
         getCont(`${REACT_APP_IP}/trx/gen`).then((data) => setTrxId(data));
       })}
     >
@@ -511,9 +663,15 @@ export default function Transaction() {
             </div>
           </PrimeReactProvider>
         </Dialog>
-        <Dialog header="Update Transaction" visible={updateVisible} style={{ width: '50vw' }} onHide={() => setUpdateVisible(false)}>
+        <Dialog
+          baseZIndex={2000}
+          header={`Update Transaction - ${currentRow ? currentRow.trx_id : ''}`}
+          visible={updateVisible}
+          style={{ width: '50vw' }}
+          onHide={() => setUpdateVisible(false)}
+        >
           <PrimeReactProvider>
-            <div className="card flex justify-content-center">
+            <div className="card flex justify-content-center mt-5">
               <ConfirmDialog
                 visible={confirmUpdateVisible}
                 onHide={() => setConfirmUpdateVisible(false)}
@@ -523,83 +681,226 @@ export default function Transaction() {
                 accept={updateForm.handleSubmit(onSubmitUpdate)}
                 reject={reject}
               />
-              <form className="flex flex-column gap-2">
+              <form id="updateTrx" onSubmit={updateForm.handleSubmit(onSubmitUpdate)} className="flex flex-row gap-2">
                 <Controller
-                  name="name"
+                  name="cst_id"
                   control={updateForm.control}
-                  rules={{ required: 'Name is required.' }}
+                  rules={{ required: 'requied' }}
                   render={({ field, fieldState }) => (
                     <>
-                      <label htmlFor={field.name}>Name</label>
-                      <AutoComplete
-                        inputId={field.name}
-                        value={field.value}
-                        onChange={field.onChange}
-                        inputRef={field.ref}
-                        className={classNames({ 'p-invalid': fieldState.error })}
-                      />
-                      {getUpdateFormErrorMessage(field.name)}
+                      <span className="p-float-label">
+                        <Dropdown
+                          id={field.name}
+                          value={field.value}
+                          optionLabel="name"
+                          placeholder="Pick a Customer"
+                          options={cust}
+                          focusInputRef={field.ref}
+                          onChange={(e) => {
+                            field.onChange(e.value);
+                            setCstId(e.target.value);
+                          }}
+                          className={classNames({ 'p-invalid': fieldState.error })}
+                        />
+                        <label htmlFor={field.name}>Customer</label>
+                      </span>
                     </>
                   )}
                 />
+
                 <Controller
-                  name="address"
+                  name="payment_type"
                   control={updateForm.control}
-                  rules={{ required: 'Address is required.' }}
+                  rules={{ required: 'requied' }}
                   render={({ field, fieldState }) => (
                     <>
-                      <label htmlFor={field.name}>Address</label>
-                      <AutoComplete
-                        inputId={field.name}
-                        value={field.value}
-                        onChange={field.onChange}
-                        inputRef={field.ref}
-                        className={classNames({ 'p-invalid': fieldState.error })}
-                      />
-                      {getUpdateFormErrorMessage(field.name)}
+                      <span className="p-float-label">
+                        <AutoComplete
+                          inputId={field.name}
+                          value={field.value}
+                          onChange={(e) => {
+                            field.onChange(e.value);
+                            setPaymentType(e.target.value);
+                          }}
+                          inputRef={field.ref}
+                          className={classNames({ 'p-invalid': fieldState.error })}
+                        />
+                        <label htmlFor={field.name} style={{ verticalAlign: top }}>
+                          Payment Type
+                        </label>
+                      </span>
                     </>
                   )}
                 />
-                <Controller
-                  name="phone"
-                  control={updateForm.control}
-                  rules={{ required: 'Phone number is required.' }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <label htmlFor={field.name}>Phone Number</label>
-                      <AutoComplete
-                        inputId={field.name}
-                        value={field.value}
-                        onChange={field.onChange}
-                        inputRef={field.ref}
-                        className={classNames({ 'p-invalid': fieldState.error })}
-                      />
-                      {getUpdateFormErrorMessage(field.name)}
-                    </>
-                  )}
-                />
-                <Controller
-                  name="pic"
-                  control={updateForm.control}
-                  rules={{ required: 'PIC is required.' }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <label htmlFor={field.name}>PIC</label>
-                      <AutoComplete
-                        inputId={field.name}
-                        value={field.value}
-                        onChange={field.onChange}
-                        inputRef={field.ref}
-                        className={classNames({ 'p-invalid': fieldState.error })}
-                      />
-                      {getUpdateFormErrorMessage(field.name)}
-                    </>
-                  )}
-                />
-                <Button onClick={setConfirmUpdateVisible} label="Submit" type="button" icon="pi pi-check" />
+
+                <Controller name="status" control={updateForm.control} render={() => <></>} />
+                <Controller name="cst_name" control={updateForm.control} render={() => <></>} />
               </form>
             </div>
+            <div className="card flex justify-content-center mt-5">
+              <form onSubmit={detailsFormb.handleSubmit(updateTrxDetailsStateb)} className="flex flex-row gap-2">
+                <Controller
+                  name="item"
+                  control={detailsFormb.control}
+                  rules={{ required: 'requied' }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <span className="p-float-label">
+                        <Dropdown
+                          id={field.name}
+                          value={field.value}
+                          optionLabel="name"
+                          placeholder="Pick an Item"
+                          options={goods}
+                          focusInputRef={field.ref}
+                          onChange={(e) => {
+                            field.onChange(e.value);
+                            detailsFormb.setValue('price', e.value.sell_price);
+                          }}
+                          className={classNames({ 'p-invalid': fieldState.error })}
+                        />
+                        <label htmlFor={field.name}>Item</label>
+                      </span>
+                    </>
+                  )}
+                />
+
+                <Controller
+                  name="quantity"
+                  control={detailsFormb.control}
+                  rules={{ required: 'requied' }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <span className="p-float-label">
+                        <InputNumber
+                          id={field.name}
+                          ref={field.ref}
+                          value={field.value}
+                          onBlur={field.onBlur}
+                          onChange={(e) => field.onChange(e.value)}
+                          mode="decimal"
+                          inputClassName={classNames({ 'p-invalid': fieldState.error })}
+                        />
+                        <label htmlFor={field.name}>Quantity</label>
+                      </span>
+                    </>
+                  )}
+                />
+                <Controller
+                  name="price"
+                  control={detailsFormb.control}
+                  rules={{ required: 'requied' }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <span className="p-float-label">
+                        <InputNumber
+                          id={field.name}
+                          ref={field.ref}
+                          value={field.value}
+                          onBlur={field.onBlur}
+                          onChange={(e) => field.onChange(e.value)}
+                          mode="currency"
+                          currency="IDR"
+                          locale="id-ID"
+                          inputClassName={classNames({ 'p-invalid': fieldState.error })}
+                        />
+                        <label htmlFor={field.name}>Price</label>
+                      </span>
+                    </>
+                  )}
+                />
+                <Button type="submit" small="true" severity="secondary" icon="pi pi-plus" />
+              </form>
+            </div>
+            <div className="card flex justify-content-center p-fluid mt-5">
+              <DataTable
+                value={transactionsDetailsb}
+                editMode="cell"
+                tableStyle={{ width: '45rem' }}
+                footerColumnGroup={totalUpdateColumnTemplate}
+                emptyMessage=" "
+              >
+                <Column field="item" header="Item" align="left" style={{ width: '20%' }} onCellEditComplete={onCellEditComplete} sortable />
+                <Column
+                  field="quantity"
+                  header="Quantity"
+                  align="left"
+                  style={{ width: '10%' }}
+                  onCellEditComplete={onCellEditComplete}
+                  sortable
+                />
+                <Column
+                  field="price"
+                  header="Price"
+                  align="left"
+                  body={priceBodyTemplate}
+                  style={{ width: '20%' }}
+                  onCellEditComplete={onCellEditComplete}
+                  sortable
+                />
+                <Column style={{ width: '1%' }} body={deleteTrxDetails} />
+              </DataTable>
+            </div>
           </PrimeReactProvider>
+        </Dialog>
+        <Dialog
+          baseZIndex={2000}
+          header={
+            <span>
+              <h2>
+                <b>Order Summary</b>
+              </h2>{' '}
+              <h4>ID: {currentRow ? currentRow.trx_id : ''}</h4>
+            </span>
+          }
+          headerStyle={{ textAlign: 'center', marginBottom: '-2%' }}
+          visible={payVisible}
+          style={{ width: '40vw' }}
+          onHide={() => setPayVisible(false)}
+        >
+          <ul style={{ display: 'table' }}>
+            <li style={{ display: 'table-row', lineHeight: 1.5, fontSize: 13 }}>
+              <b style={{ display: 'table-cell', paddingRight: '1em' }}>Customer</b>
+              <b>:</b> &nbsp; {currentRow ? currentRow.cst_name : ''}
+            </li>
+            <li style={{ display: 'table-row', lineHeight: 1.5, fontSize: 13 }}>
+              <b style={{ display: 'table-cell', paddingRight: '1em' }}>Payment Date</b>
+              <b>:</b> &nbsp; {dateTime}
+            </li>
+            <li style={{ display: 'table-row', lineHeight: 1.5, fontSize: 13 }}>
+              <b style={{ display: 'table-cell', paddingRight: '1em' }}>Payment Type</b>
+              <b>:</b> &nbsp; {currentRow ? currentRow.payment_type : ''}
+            </li>
+          </ul>
+          <div className="card flex justify-content-center p-fluid mt-5">
+            <DataTable
+              value={currentRow ? currentRow.TransactionsDetails : []}
+              showGridlines
+              editMode="cell"
+              tableStyle={{ width: '45rem' }}
+              footerColumnGroup={totalPaymentColumnTemplate}
+              emptyMessage=" "
+            >
+              <Column field="item" header="Item" align="left" style={{ width: '20%' }} onCellEditComplete={onCellEditComplete} sortable />
+              <Column
+                field="quantity"
+                header="Quantity"
+                align="left"
+                style={{ width: '20%' }}
+                onCellEditComplete={onCellEditComplete}
+                sortable
+              />
+              <Column
+                field="price"
+                header="Price"
+                align="left"
+                body={priceBodyTemplate}
+                style={{ width: '20%' }}
+                onCellEditComplete={onCellEditComplete}
+                sortable
+              />
+            </DataTable>
+          </div>
         </Dialog>
       </PrimeReactProvider>
     </MainCard>

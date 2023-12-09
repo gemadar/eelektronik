@@ -130,10 +130,14 @@ export default function Supplier() {
   };
 
   const insertState = (data) => {
-    setSuppliers([
-      ...suppliers,
-      { id: suppliers[suppliers.length - 1].id + 1, name: data.name, address: data.address, pic: data.pic, phone: data.phone, Goods: [] }
-    ]);
+    if (suppliers.length > 0) {
+      setSuppliers([
+        ...suppliers,
+        { id: suppliers[suppliers.length - 1].id + 1, name: data.name, address: data.address, pic: data.pic, phone: data.phone, Goods: [] }
+      ]);
+    } else {
+      setSuppliers([{ id: 1, name: data.name, address: data.address, pic: data.pic, phone: data.phone, Goods: [] }]);
+    }
   };
 
   const allowExpansion = (rowData) => {

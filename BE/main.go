@@ -38,7 +38,8 @@ func main() {
 	//route for transactions
 	e.GET("/trx", handlers.GetTransactions, handlers.IsLoggedIn)
 	e.GET("/trx/gen", handlers.GenerateTrxId, handlers.IsLoggedIn)
-	e.POST("/trx", handlers.CreateUpdateTransactions, handlers.IsLoggedIn)
+	e.POST("/trx", handlers.CreateTransactions, handlers.IsLoggedIn)
+	e.POST("/trx/update", handlers.UpdateTransactions, handlers.IsLoggedIn)
 	e.POST("/trx/delete", handlers.DeleteTransactions, handlers.IsLoggedIn)
 	e.POST("/trx/pay", handlers.PayTransactions, handlers.IsLoggedIn)
 

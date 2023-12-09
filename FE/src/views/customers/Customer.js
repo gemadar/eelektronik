@@ -140,19 +140,34 @@ export default function Customer() {
   };
 
   const insertState = (data) => {
-    setCustomers([
-      ...customers,
-      {
-        id: customers[customers.length - 1].id + 1,
-        name: data.name,
-        address: data.address,
-        gender: data.gender,
-        dob: data.dob,
-        phone: data.phone,
-        email: data.email,
-        Transactions: []
-      }
-    ]);
+    if (goods.length > 0) {
+      setCustomers([
+        ...customers,
+        {
+          id: customers[customers.length - 1].id + 1,
+          name: data.name,
+          address: data.address,
+          gender: data.gender,
+          dob: data.dob,
+          phone: data.phone,
+          email: data.email,
+          Transactions: []
+        }
+      ]);
+    } else {
+      setCustomers([
+        {
+          id: 1,
+          name: data.name,
+          address: data.address,
+          gender: data.gender,
+          dob: data.dob,
+          phone: data.phone,
+          email: data.email,
+          Transactions: []
+        }
+      ]);
+    }
   };
 
   const allowExpansion = (rowData) => {

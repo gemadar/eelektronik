@@ -146,21 +146,38 @@ export default function Goods() {
   };
 
   const insertState = (data) => {
-    setGoods([
-      ...goods,
-      {
-        id: goods[goods.length - 1].id + 1,
-        name: data.name,
-        prd_code: data.prd_code,
-        brand: data.brand,
-        quantity: data.quantity,
-        prd_category: data.prd_category,
-        buy_price: data.buy_price,
-        sell_price: data.sell_price,
-        supplier_name: data.supplier_name,
-        created_at: Date.now()
-      }
-    ]);
+    if (goods.length > 0) {
+      setGoods([
+        ...goods,
+        {
+          id: goods[goods.length - 1].id + 1,
+          name: data.name,
+          prd_code: data.prd_code,
+          brand: data.brand,
+          quantity: data.quantity,
+          prd_category: data.prd_category,
+          buy_price: data.buy_price,
+          sell_price: data.sell_price,
+          supplier_name: data.supplier_name,
+          created_at: Date.now()
+        }
+      ]);
+    } else {
+      setGoods([
+        {
+          id: 1,
+          name: data.name,
+          prd_code: data.prd_code,
+          brand: data.brand,
+          quantity: data.quantity,
+          prd_category: data.prd_category,
+          buy_price: data.buy_price,
+          sell_price: data.sell_price,
+          supplier_name: data.supplier_name,
+          created_at: Date.now()
+        }
+      ]);
+    }
   };
 
   const acceptDelete = () => {
