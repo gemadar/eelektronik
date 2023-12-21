@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -54,7 +55,6 @@ func GetTransactions() ([]models.Transactions, error) {
 }
 
 func CreateTransactions(trx models.Transactions) string {
-	fmt.Println(trx)
 	result1 := db.Create(&trx)
 
 	if result1.Error != nil {
@@ -64,18 +64,18 @@ func CreateTransactions(trx models.Transactions) string {
 }
 
 func UpdateTransactions(trx models.Transactions) string {
-	fmt.Println(trx.Total)
 	result := db.Transaction(func(tx *gorm.DB) error {
-		if err := db.Model(&models.Transactions{}).Where("trx_id = ?", trx.TrxId).Updates(models.Transactions{PaymentType: trx.PaymentType, Total: trx.Total, CstId: trx.CstId, CstName: trx.CstName}).Error; err != nil {
+		if err := tx.Model(&models.Transactions{}).Where("trx_id = ?", trx.TrxId).Updates(models.Transactions{PaymentType: trx.PaymentType, Total: trx.Total, CstId: trx.CstId, CstName: trx.CstName}).Error; err != nil {
 			return err
 		}
+
 		for i := range trx.TransactionsDetails {
 			if trx.TransactionsDetails[i].Id != 0 {
-				if err := db.Model(&models.TransactionsDetails{}).Where("id = ?", trx.TransactionsDetails[i].Id).Updates(models.TransactionsDetails{Quantity: trx.TransactionsDetails[i].Quantity, Price: trx.TransactionsDetails[i].Price}).Error; err != nil {
+				if err := tx.Model(&models.TransactionsDetails{}).Where("id = ?", trx.TransactionsDetails[i].Id).Updates(models.TransactionsDetails{Quantity: trx.TransactionsDetails[i].Quantity, Price: trx.TransactionsDetails[i].Price}).Error; err != nil {
 					return err
 				}
 			} else {
-				if err := db.Create(&trx.TransactionsDetails[i]).Error; err != nil {
+				if err := tx.Create(&trx.TransactionsDetails[i]).Error; err != nil {
 					return err
 				}
 			}
@@ -91,8 +91,8 @@ func UpdateTransactions(trx models.Transactions) string {
 	return "Success!"
 }
 
-func DeleteTransactions(trx models.Transactions) string {
-	result := db.Delete(&models.Transactions{}, trx.TrxId)
+func DeleteTrxDetails(trxDetails models.TransactionsDetails) string {
+	result := db.Delete(&models.TransactionsDetails{}, trxDetails.Id)
 
 	if result.Error != nil {
 		return "Failed!"
@@ -101,28 +101,50 @@ func DeleteTransactions(trx models.Transactions) string {
 }
 
 func PayTrx(trx models.Transactions) string {
+	var pay models.CashFlows
+	var cash models.Cashes
+	uuid := uuid.NewString()
+
+	pay.TrxId = trx.TrxId
+	pay.PaymentId = uuid
+	pay.Amount = trx.Total
+
 	result := db.Transaction(func(tx *gorm.DB) error {
-		//var goods models.Goods
+		var goods models.Goods
 		// Update Trx Status
 		if err := tx.Model(&models.Transactions{}).Where("trx_id = ?", trx.TrxId).Update("status", "paid").Error; err != nil {
 			return err
 		}
 
 		// Update Stock
-		// for i := range trx.TransactionsDetails {
-		// 	if err := tx.Model(&models.Goods{}).Where("name = ?", trx.TransactionsDetails[i].Item).Select("quantity").Find(&goods); err.Error != nil {
-		// 		return err.Error
-		// 	}
+		for i := range trx.TransactionsDetails {
+			if err := tx.Model(&models.Goods{}).Where("name = ?", trx.TransactionsDetails[i].Item).Select("quantity").Find(&goods); err.Error != nil {
+				return err.Error
+			}
 
-		// 	if err := tx.Model(&models.Goods{}).Where("name = ?", trx.TransactionsDetails[i]).Update("quantity", goods.Quantity-int32(trx.TransactionsDetails[i].Quantity)).Error; err != nil {
-		// 		return err
-		// 	}
-		// }
+			if err := tx.Model(&models.Goods{}).Where("name = ?", trx.TransactionsDetails[i].Item).Update("quantity", goods.Quantity-int32(trx.TransactionsDetails[i].Quantity)).Error; err != nil {
+				return err
+			}
+		}
 
-		// Add to Cash
-		// if err := tx.Model(&models.Goods{}).Where("trx_id = ?", trx.TrxId).Update("status", "paid").Error; err != nil {
-		// 	return err
-		// }
+		// Add to Cashflow
+		if err := tx.Create(&pay).Error; err != nil {
+			return err
+		}
+
+		// Update current balance
+		c := db.Model(models.Cashes{}).Select("amount").Where("amount_date = ?", time.Now().Format("2006-01-02")).Find(&cash)
+		if c.RowsAffected != 0 {
+			if err := tx.Model(&models.Cashes{}).Where("amount_date = ?", time.Now().Format("2006-01-02")).Update("amount", cash.Amount+trx.Total).Error; err != nil {
+				return err
+			}
+		} else {
+			cash.Amount = trx.Total
+			cash.AmountDate = time.Now().Format("2006-01-02")
+			if err := tx.Create(&cash).Error; err != nil {
+				return err
+			}
+		}
 
 		return nil
 	})

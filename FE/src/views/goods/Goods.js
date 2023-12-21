@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { deleteCont, getCont, insertUpdateCont, getAuthToken, getToken } from 'components/controller';
-import { formatTimestamp, priceTemplate, fab } from 'components/Formatter/format';
+import { priceTemplate, fab } from 'components/Formatter/format';
 import { useForm } from 'react-hook-form';
 import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
@@ -44,6 +44,7 @@ export default function Goods() {
       <Button
         icon="pi pi-bars"
         className="mr-2"
+        style={{ height: '1px' }}
         size="small"
         text
         severity="secondary"
@@ -192,9 +193,9 @@ export default function Goods() {
     toast.current.show({ severity: 'info', summary: 'Rejected', detail: 'You have rejected', life: 3000 });
   };
 
-  const createdDateBodyTemplate = (rowData) => {
-    return formatTimestamp(rowData.created_at);
-  };
+  // const createdDateBodyTemplate = (rowData) => {
+  //   return formatTimestamp(rowData.created_at);
+  // };
 
   const sellPriceBodyTemplate = (rowData) => {
     return priceTemplate(rowData.sell_price);
@@ -234,7 +235,6 @@ export default function Goods() {
           footer={footer}
           dataKey="id"
           emptyMessage=" "
-          stripedRows
           tableStyle={{ minWidth: '50rem' }}
         >
           <Column field="name" header="Name" style={{ width: '20%' }} sortable />
@@ -251,11 +251,9 @@ export default function Goods() {
           />
           <Column field="sell_price" header="Sell Price" body={sellPriceBodyTemplate} style={{ width: '20%' }} sortable />
           <Column field="supplier_name" header="Supplier" style={{ width: '20%' }} sortable />
-          <Column field="created_at" header="Created At" body={createdDateBodyTemplate} style={{ width: '20%' }} sortable />
-
           <Column
             headerStyle={{ width: '4rem', textAlign: 'center' }}
-            bodyStyle={{ textAlign: 'center', overflow: 'visible' }}
+            bodyStyle={{ textAlign: 'center', overflow: 'visible', height: '1px' }}
             body={sideMenuTemplate}
           />
         </DataTable>

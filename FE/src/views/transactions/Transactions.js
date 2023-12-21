@@ -38,7 +38,7 @@ export default function Transaction() {
   const [payVisible, setPayVisible] = useState(false);
   const [paymentType, setPaymentType] = useState('');
   const [cstId, setCstId] = useState('');
-  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [confirmPayVisible, setConfirmPayVisible] = useState(false);
   const [confirmUpdateVisible, setConfirmUpdateVisible] = useState(false);
   const sideMenu = useRef(null);
   const toast = useRef(null);
@@ -53,13 +53,14 @@ export default function Transaction() {
 
   // HAMBUREGER MENU
   const sideMenuTemplate = (data) => {
-    return (
+    return data.status != 'paid' ? (
       <Button
         icon="pi pi-bars"
         className="mr-2"
         text
         size="small"
         severity="secondary"
+        style={{height: '1px'}}
         onClick={(e) => {
           sideMenu.current.toggle(e);
           setCurrentRow(data);
@@ -67,7 +68,7 @@ export default function Transaction() {
         aria-controls="popup_menu_right"
         aria-haspopup
       />
-    );
+    ) : null;
   };
 
   const sideMenuitems = [
@@ -114,6 +115,14 @@ export default function Transaction() {
     toast.current.show({ severity: 'success', summary: 'Creating', detail: 'Data Added', life: 3000 });
   };
 
+  const onSubmitPay = async (data) => {
+    insertUpdateCont(currentRow, `${REACT_APP_IP}/trx/pay`).then(setPayVisible(false));
+
+    payState(data);
+
+    toast.current.show({ severity: 'success', summary: 'Payment', detail: 'Paid', life: 3000 });
+  };
+
   const onSubmitUpdate = async (data) => {
     data['TransactionsDetails'] = transactionsDetailsb;
     data['total'] = totalCurrentColumn();
@@ -143,10 +152,11 @@ export default function Transaction() {
     if (transactionsDetails.length == 0) {
       setTransactionsDetails([
         {
+          id: '23',
           item: data.item.name,
           quantity: data.quantity,
           price: intPrice * intQty,
-          created_at: Date.now()
+          trx_id: trxId ? trxId : ''
         }
       ]);
     } else {
@@ -157,7 +167,12 @@ export default function Transaction() {
       if (a !== null) {
         const dat = transactionsDetails.map((a) => {
           if (a.item === data.item.name) {
-            return { ...a, quantity: a.quantity + data.quantity, price: intPrice * intQty, created_at: Date.now() };
+            return {
+              ...a,
+              quantity: a.quantity + data.quantity,
+              price: intPrice * intQty,
+              trx_id: trxId ? trxId : ''
+            };
           }
           return a;
         });
@@ -166,10 +181,11 @@ export default function Transaction() {
         setTransactionsDetails([
           ...transactionsDetails,
           {
+            id: '24',
             item: data.item.name,
             quantity: data.quantity,
-            price: intPrice * intQty,
-            created_at: Date.now()
+            trx_id: trxId ? trxId : '',
+            price: intPrice * intQty
           }
         ]);
       }
@@ -188,8 +204,7 @@ export default function Transaction() {
           item: data.item.name,
           quantity: data.quantity,
           price: intPrice * intQty,
-          trx_id: currentRow ? currentRow.trx_id : '',
-          created_at: Date.now()
+          trx_id: currentRow ? currentRow.trx_id : ''
         }
       ]);
     } else {
@@ -204,8 +219,7 @@ export default function Transaction() {
               ...a,
               quantity: a.quantity + data.quantity,
               price: a.price + intPrice * intQty,
-              trx_id: currentRow ? currentRow.trx_id : '',
-              created_at: Date.now()
+              trx_id: currentRow ? currentRow.trx_id : ''
             };
           }
           return a;
@@ -218,8 +232,7 @@ export default function Transaction() {
             item: data.item.name,
             quantity: data.quantity,
             price: intPrice * intQty,
-            trx_id: currentRow ? currentRow.trx_id : '',
-            created_at: Date.now()
+            trx_id: currentRow ? currentRow.trx_id : ''
           }
         ]);
       }
@@ -240,7 +253,9 @@ export default function Transaction() {
           status: data.status,
           created_at: Date.now(),
           total: data.total,
-          TransactionsDetails: transactionsDetails
+          TransactionsDetails: transactionsDetails.map((obj) => {
+            return { ...obj, created_at: Date.now() };
+          })
         }
       ]);
     } else {
@@ -254,7 +269,9 @@ export default function Transaction() {
           status: data.status,
           created_at: Date.now(),
           total: data.total,
-          TransactionsDetails: transactionsDetails
+          TransactionsDetails: transactionsDetails.map((obj) => {
+            return { ...obj, created_at: Date.now() };
+          })
         }
       ]);
     }
@@ -269,9 +286,22 @@ export default function Transaction() {
           cst_name: data.cst_name,
           trx_id: data.trx_id,
           status: data.status,
-          created_at: Date.now(),
           total: data.total,
           TransactionsDetails: data.TransactionsDetails
+        };
+      }
+      return obj;
+    });
+
+    setTransactions(newData);
+  };
+
+  const payState = () => {
+    const newData = transactions.map((obj) => {
+      if (obj.id === currentRow.id) {
+        return {
+          ...obj,
+          status: 'paid'
         };
       }
       return obj;
@@ -288,15 +318,18 @@ export default function Transaction() {
     return <Button onClick={() => handleDeleteTrxDetails(data)} icon="pi pi-times" text small="true" severity="danger" />;
   };
 
-  const allowExpansion = (rowData) => {
-    return rowData.TransactionsDetails.length > 0;
+  const handleDeleteTrxDetailsb = (data) => {
+    deleteCont(data['id'], `${REACT_APP_IP}/trx/delete`).then(() => {
+      setTransactionsDetailsb(transactionsDetailsb.filter((trx) => trx.item !== data.item));
+    });
   };
 
-  const acceptDelete = () => {
-    deleteCont(currentRow.id, `${REACT_APP_IP}/trx/delete`).then(() => {
-      setTransactions(transactions.filter((trx) => trx.id !== currentRow.id));
-    });
-    toast.current.show({ severity: 'danger', summary: 'Delete', detail: 'Data Deleted', life: 3000 });
+  const deleteTrxDetailsb = (data) => {
+    return <Button onClick={() => handleDeleteTrxDetailsb(data)} icon="pi pi-times" text small="true" severity="danger" />;
+  };
+
+  const allowExpansion = (rowData) => {
+    return rowData.TransactionsDetails.length > 0;
   };
 
   const reject = () => {
@@ -442,7 +475,7 @@ export default function Transaction() {
       </Row>
     </ColumnGroup>
   );
-  console.log(paymentType);
+
   const totalPaymentColumnTemplate = (
     <ColumnGroup>
       <Row>
@@ -463,12 +496,12 @@ export default function Transaction() {
       <PrimeReactProvider>
         <Toast ref={toast}></Toast>
         <ConfirmDialog
-          visible={confirmDeleteVisible}
-          onHide={() => setConfirmDeleteVisible(false)}
+          visible={confirmPayVisible}
+          onHide={() => setConfirmPayVisible(false)}
           message="Are you sure you want to proceed?"
-          header="DELETE"
+          header="Pay"
           icon="pi pi-exclamation-triangle"
-          accept={acceptDelete}
+          accept={onSubmitPay}
           reject={reject}
         />
         <Menu model={sideMenuitems} popup ref={sideMenu} id="popup_menu" popupAlignment="right" />
@@ -838,7 +871,7 @@ export default function Transaction() {
                   onCellEditComplete={onCellEditComplete}
                   sortable
                 />
-                <Column style={{ width: '1%' }} body={deleteTrxDetails} />
+                <Column style={{ width: '1%' }} body={deleteTrxDetailsb} />
               </DataTable>
             </div>
           </PrimeReactProvider>
@@ -886,7 +919,7 @@ export default function Transaction() {
                 field="quantity"
                 header="Quantity"
                 align="left"
-                style={{ width: '20%' }}
+                style={{ width: '3%' }}
                 onCellEditComplete={onCellEditComplete}
                 sortable
               />
@@ -900,6 +933,16 @@ export default function Transaction() {
                 sortable
               />
             </DataTable>
+          </div>
+          <div style={{ textAlign: 'center', marginTop: '3%' }}>
+            <Button
+              type="button"
+              onClick={setConfirmPayVisible}
+              size="small"
+              severity="success"
+              label="Pay"
+              style={{ width: '20%', height: '96%' }}
+            />
           </div>
         </Dialog>
       </PrimeReactProvider>

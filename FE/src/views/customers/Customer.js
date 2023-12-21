@@ -52,6 +52,7 @@ export default function Customer() {
         className="mr-2"
         text
         size="small"
+        style={{ height: '1px' }}
         severity="secondary"
         onClick={(e) => {
           sideMenu.current.toggle(e);

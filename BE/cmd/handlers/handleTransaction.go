@@ -27,6 +27,7 @@ func CreateTransactions(c echo.Context) error {
 	trx := models.Transactions{}
 
 	c.Bind(&trx)
+
 	createdTransaction := repositories.CreateTransactions(trx)
 
 	return c.JSON(http.StatusOK, createdTransaction)
@@ -36,16 +37,17 @@ func UpdateTransactions(c echo.Context) error {
 	trx := models.Transactions{}
 
 	c.Bind(&trx)
+
 	updatedTransaction := repositories.UpdateTransactions(trx)
 
 	return c.JSON(http.StatusOK, updatedTransaction)
 }
 
-func DeleteTransactions(c echo.Context) error {
-	trx := models.Transactions{}
+func DeleteTrxDetails(c echo.Context) error {
+	trxDetails := models.TransactionsDetails{}
 
-	c.Bind(&trx)
-	updatedTransaction := repositories.DeleteTransactions(trx)
+	c.Bind(&trxDetails)
+	updatedTransaction := repositories.DeleteTrxDetails(trxDetails)
 
 	return c.JSON(http.StatusOK, updatedTransaction)
 }

@@ -1,8 +1,10 @@
 import PropTypes from 'prop-types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // material-ui
 import { styled, useTheme } from '@mui/material/styles';
+import { getCont } from 'components/controller';
+import { priceTemplate } from 'components/Formatter/format';
 import { Avatar, Box, Grid, Menu, MenuItem, Typography } from '@mui/material';
 
 // project imports
@@ -60,6 +62,13 @@ const EarningCard = ({ isLoading }) => {
   const theme = useTheme();
 
   const [anchorEl, setAnchorEl] = useState(null);
+  const [earning, setEarning] = useState([]);
+  const { REACT_APP_IP } = process.env;
+
+  useEffect(() => {
+    getCont(`${REACT_APP_IP}/curr`).then((data) => setEarning(data));
+    console.log(earning);
+  }, [REACT_APP_IP]);
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -143,7 +152,9 @@ const EarningCard = ({ isLoading }) => {
               <Grid item>
                 <Grid container alignItems="center">
                   <Grid item>
-                    <Typography sx={{ fontSize: '2.125rem', fontWeight: 500, mr: 1, mt: 1.75, mb: 0.75 }}>$500.00</Typography>
+                    <Typography sx={{ fontSize: '2.125rem', fontWeight: 500, mr: 1, mt: 1.75, mb: 0.75 }}>
+                      {priceTemplate(earning)}
+                    </Typography>
                   </Grid>
                   <Grid item>
                     <Avatar

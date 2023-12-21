@@ -127,6 +127,29 @@
   }
 }
 
-// .p-row-odd{
-//   background-color: yellowgreen;
-// }
+.p-row-odd {
+   background-color: #aec4c1;
+   font-weight: 500;
+ }
+
+th {
+  background-color: #1b8179;
+  height: 1rem;
+  color: #000000;
+  font-weight: 600;
+}
+
+td {
+    height: 1px;
+    color: #000000;
+    font-weight: 300;
+}
+
+.p-row-toggler {
+  height: 20px;
+}
+
+.p-datatable-row-expansion {
+  background-color: #acacac;
+}
+

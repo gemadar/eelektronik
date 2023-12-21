@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
@@ -40,7 +39,6 @@ const ProfileSection = () => {
   const customization = useSelector((state) => state.customization);
   const navigate = useNavigate();
 
-  const [selectedIndex, setSelectedIndex] = useState(-1);
   const [user, setUser] = useState('');
   const [open, setOpen] = useState(false);
   const { REACT_APP_IP } = process.env;
@@ -52,8 +50,6 @@ const ProfileSection = () => {
   const handleLogout = async () => {
     localStorage.removeItem('a');
     localStorage.removeItem('b');
-    console.log(user);
-    console.log(user.username);
     insertUpdateCont({ username: user.username }, `${REACT_APP_IP}/logout`);
     navigate('/auth');
     window.location.reload(true);
@@ -66,14 +62,6 @@ const ProfileSection = () => {
     setOpen(false);
   };
 
-  const handleListItemClick = (event, index, route = '') => {
-    setSelectedIndex(index);
-    handleClose(event);
-
-    if (route && route !== '') {
-      navigate(route);
-    }
-  };
   const handleToggle = () => {
     setOpen((prevOpen) => !prevOpen);
   };
@@ -184,21 +172,13 @@ const ProfileSection = () => {
                           }
                         }}
                       >
-                        <ListItemButton
-                          sx={{ borderRadius: `${customization.borderRadius}px` }}
-                          selected={selectedIndex === 0}
-                          onClick={(event) => handleListItemClick(event, 0, '#')}
-                        >
+                        <ListItemButton sx={{ borderRadius: `${customization.borderRadius}px` }}>
                           <ListItemIcon>
                             <IconSettings stroke={1.5} size="1.3rem" />
                           </ListItemIcon>
                           <ListItemText primary={<Typography variant="body2">Account Settings</Typography>} />
                         </ListItemButton>
-                        <ListItemButton
-                          sx={{ borderRadius: `${customization.borderRadius}px` }}
-                          selected={selectedIndex === 4}
-                          onClick={handleLogout}
-                        >
+                        <ListItemButton sx={{ borderRadius: `${customization.borderRadius}px` }} onClick={handleLogout}>
                           <ListItemIcon>
                             <IconLogout stroke={1.5} size="1.3rem" />
                           </ListItemIcon>

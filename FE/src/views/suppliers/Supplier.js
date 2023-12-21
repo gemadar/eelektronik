@@ -21,6 +21,7 @@ import 'primereact/resources/themes/lara-light-indigo/theme.css'; // theme
 import 'primeflex/primeflex.css'; // css utility
 import 'primeicons/primeicons.css';
 import 'primereact/resources/primereact.css'; // core css
+//import { style } from '@mui/system';
 
 export default function Supplier() {
   const [suppliers, setSuppliers] = useState([]);
@@ -50,6 +51,7 @@ export default function Supplier() {
         text
         size="small"
         severity="secondary"
+        style={{ height: '1px' }}
         onClick={(e) => {
           sideMenu.current.toggle(e);
           setCurrentRow(data);
@@ -170,11 +172,11 @@ export default function Supplier() {
 
   const rowExpansionTemplate = (data) => {
     return (
-      <div className="p-1">
+      <div>
         <h5>
           {data.Goods.length} Goods from {data.name}
         </h5>
-        <DataTable value={data.Goods}>
+        <DataTable value={data.Goods} tableClassName='p-test'>
           <Column field="name" header="Name" sortable></Column>
           <Column field="productcode" header="Code" sortable></Column>
           <Column field="brand" header="Brand" sortable></Column>

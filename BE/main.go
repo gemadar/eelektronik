@@ -2,7 +2,9 @@ package main
 
 import (
 	"eelektronik-echo/cmd/handlers"
+	"eelektronik-echo/cmd/repositories"
 	"eelektronik-echo/cmd/storage"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -40,8 +42,11 @@ func main() {
 	e.GET("/trx/gen", handlers.GenerateTrxId, handlers.IsLoggedIn)
 	e.POST("/trx", handlers.CreateTransactions, handlers.IsLoggedIn)
 	e.POST("/trx/update", handlers.UpdateTransactions, handlers.IsLoggedIn)
-	e.POST("/trx/delete", handlers.DeleteTransactions, handlers.IsLoggedIn)
+	e.POST("/trx/delete", handlers.DeleteTrxDetails, handlers.IsLoggedIn)
 	e.POST("/trx/pay", handlers.PayTransactions, handlers.IsLoggedIn)
+
+	//route for dashboard
+	e.GET("/curr", handlers.GetCash, handlers.IsLoggedIn, handlers.IsAdmin)
 
 	e.POST("/login", handlers.LogIn)
 	e.POST("/ref", handlers.Refresh)
@@ -56,6 +61,9 @@ func main() {
 		AllowOrigins: []string{"http://localhost:3000", "http://103.190.29.86:3000"},
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
 	}))
+
+	// Clear Expired Logged In User
+	repositories.Schedule(repositories.ClearIsLogin, 30*time.Minute)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }
