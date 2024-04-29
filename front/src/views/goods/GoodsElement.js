@@ -75,6 +75,7 @@ function test(form, errors, type, brand, category, confirmUpdate, setConfirmUpda
                       style={{ width: '100%' }}
                       id={field.name}
                       value={field.value}
+                      editable
                       placeholder="Pick a Brand"
                       options={brand}
                       focusInputRef={field.ref}
@@ -124,6 +125,7 @@ function test(form, errors, type, brand, category, confirmUpdate, setConfirmUpda
                       value={field.value}
                       placeholder="Pick a Category"
                       options={category}
+                      editable
                       focusInputRef={field.ref}
                       onChange={(e) => field.onChange(e.value)}
                       className={classNames({ 'p-invalid': fieldState.error })}
