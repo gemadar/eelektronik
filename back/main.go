@@ -12,45 +12,48 @@ import (
 
 func main() {
 	e := echo.New()
-	e.GET("/", handlers.Home)
+	api := e.Group("/back")
 	storage.InitDB()
 
+	//home route
+	api.GET("/", handlers.Home)
+
 	//route for users
-	e.GET("/users", handlers.GetUser, handlers.IsLoggedIn, handlers.IsAdmin)
-	e.POST("/users", handlers.CreateUser, handlers.IsLoggedIn, handlers.IsAdmin)
-	e.POST("/users/update", handlers.HandleUpdateUser, handlers.IsLoggedIn, handlers.IsAdmin)
+	api.GET("/users", handlers.GetUser, handlers.IsLoggedIn, handlers.IsAdmin)
+	api.POST("/users", handlers.CreateUser)
+	api.POST("/users/update", handlers.HandleUpdateUser, handlers.IsLoggedIn, handlers.IsAdmin)
 
 	//route for suppliers
-	e.GET("/supp", handlers.GetSupplier, handlers.IsLoggedIn, handlers.IsAdmin)
-	e.POST("/supp", handlers.CreateUpdateSupplier, handlers.IsLoggedIn, handlers.IsAdmin)
-	e.POST("/supp/delete", handlers.DeleteSupplier, handlers.IsLoggedIn, handlers.IsAdmin)
+	api.GET("/supp", handlers.GetSupplier, handlers.IsLoggedIn, handlers.IsAdmin)
+	api.POST("/supp", handlers.CreateUpdateSupplier, handlers.IsLoggedIn, handlers.IsAdmin)
+	api.POST("/supp/delete", handlers.DeleteSupplier, handlers.IsLoggedIn, handlers.IsAdmin)
 
 	//route for goods
-	e.GET("/goods", handlers.GetGood, handlers.IsLoggedIn)
-	e.GET("/goods/category", handlers.GetPrdCategory, handlers.IsLoggedIn)
-	e.GET("/goods/brand", handlers.GetBrand, handlers.IsLoggedIn)
-	e.POST("/goods", handlers.CreateUpdateGood, handlers.IsLoggedIn)
-	e.POST("/goods/delete", handlers.DeleteGood, handlers.IsLoggedIn)
+	api.GET("/goods", handlers.GetGood, handlers.IsLoggedIn)
+	api.GET("/goods/category", handlers.GetPrdCategory, handlers.IsLoggedIn)
+	api.GET("/goods/brand", handlers.GetBrand, handlers.IsLoggedIn)
+	api.POST("/goods", handlers.CreateUpdateGood, handlers.IsLoggedIn)
+	api.POST("/goods/delete", handlers.DeleteGood, handlers.IsLoggedIn)
 
 	//route for customers
-	e.GET("/cust", handlers.GetCustomer, handlers.IsLoggedIn)
-	e.POST("/cust", handlers.CreateUpdateCustomer, handlers.IsLoggedIn, handlers.IsAdmin)
-	e.POST("/cust/delete", handlers.DeleteCustomer, handlers.IsLoggedIn, handlers.IsAdmin)
+	api.GET("/cust", handlers.GetCustomer, handlers.IsLoggedIn)
+	api.POST("/cust", handlers.CreateUpdateCustomer, handlers.IsLoggedIn, handlers.IsAdmin)
+	api.POST("/cust/delete", handlers.DeleteCustomer, handlers.IsLoggedIn, handlers.IsAdmin)
 
 	//route for transactions
-	e.GET("/trx", handlers.GetTransactions, handlers.IsLoggedIn)
-	e.GET("/trx/gen", handlers.GenerateTrxId, handlers.IsLoggedIn)
-	e.POST("/trx", handlers.CreateTransactions, handlers.IsLoggedIn)
-	e.POST("/trx/update", handlers.UpdateTransactions, handlers.IsLoggedIn)
-	e.POST("/trx/delete", handlers.DeleteTrxDetails, handlers.IsLoggedIn)
-	e.POST("/trx/pay", handlers.PayTransactions, handlers.IsLoggedIn)
+	api.GET("/trx", handlers.GetTransactions, handlers.IsLoggedIn)
+	api.GET("/trx/gen", handlers.GenerateTrxId, handlers.IsLoggedIn)
+	api.POST("/trx", handlers.CreateTransactions, handlers.IsLoggedIn)
+	api.POST("/trx/update", handlers.UpdateTransactions, handlers.IsLoggedIn)
+	api.POST("/trx/delete", handlers.DeleteTrxDetails, handlers.IsLoggedIn)
+	api.POST("/trx/pay", handlers.PayTransactions, handlers.IsLoggedIn)
 
 	//route for dashboard
-	e.GET("/curr", handlers.GetCash, handlers.IsLoggedIn, handlers.IsAdmin)
+	api.GET("/curr", handlers.GetCash, handlers.IsLoggedIn, handlers.IsAdmin)
 
-	e.POST("/login", handlers.LogIn)
-	e.POST("/ref", handlers.Refresh)
-	e.POST("/logout", handlers.LogOut)
+	api.POST("/login", handlers.LogIn)
+	api.POST("/ref", handlers.Refresh)
+	api.POST("/logout", handlers.LogOut)
 
 	//middleware
 	e.Use(handlers.LogRequest)

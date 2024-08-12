@@ -1,33 +1,33 @@
-version: '3'
+  version: '3'
 
-services:
-  database:
-    image: postgres
-    build:
-      context: ./back/cmd/models/db
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ro777ot.!@@%
-      POSTGRES_DB: eelektronik
-    volumes:
-      - ./back/cmd/models/db:/docker-entrypoint-initdb.d
+  services:
+    database:
+      image: postgres
+      build:
+        context: ./back/cmd/models/db
+      ports:
+        - "5432:5432"
+      environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: ro777ot.!@@%
+        POSTGRES_DB: eelektronik
+      volumes:
+        - ./back/cmd/models/db:/docker-entrypoint-initdb.d
 
 
-  backend:
-    build:
-      context: ./back
-    ports:
-      - "8080:8080"
-    depends_on:
-      - database
-    environment:
-      DATABASE_URL: "host=database user=postgres dbname=postgres password=ro777ot.!@@% sslmode=disable"
+    backend:
+      build:
+        context: ./back
+      ports:
+        - "8080:8080"
+      depends_on:
+        - database
+      environment:
+        DATABASE_URL: "host=database user=postgres dbname=postgres password=ro777ot.!@@% sslmode=disable"
 
-  frontend:
-    build:
-      context: ./front
-    ports:
-      - "3000:3000"
+    frontend:
+      build:
+        context: ./front
+      ports:
+        - "3000:3000"
 
