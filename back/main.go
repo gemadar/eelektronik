@@ -20,7 +20,7 @@ func main() {
 
 	//route for users
 	api.GET("/users", handlers.GetUser, handlers.IsLoggedIn, handlers.IsAdmin)
-	api.POST("/users", handlers.CreateUser)
+	api.POST("/users", handlers.CreateUser, handlers.IsLoggedIn, handlers.IsAdmin)
 	api.POST("/users/update", handlers.HandleUpdateUser, handlers.IsLoggedIn, handlers.IsAdmin)
 
 	//route for suppliers

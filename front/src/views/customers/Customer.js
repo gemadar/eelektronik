@@ -107,7 +107,7 @@ export default function Customer() {
     data['id'] = currentRow.id;
     data['Transactions'] = currentRow.Transactions;
 
-    insertUpdateCont(data, `${REACT_APP_IP}/customers`).then(setUpdateVisible(false));
+    insertUpdateCont(data, `${REACT_APP_IP}/cust`).then(setUpdateVisible(false));
 
     updateState(data);
 
